@@ -1,4 +1,4 @@
-public class SystemObserverThread extends Thread {
+public class SystemObserver extends Thread {
     @Override
     public void run() {
         super.run();

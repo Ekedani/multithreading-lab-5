@@ -1,36 +1,41 @@
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ServiceSystem {
     private final int channelsNumber;
-    private final long modellingTime;
+    private final int taskExecutionTime;
     private final int averageTimeBetweenTasks;
+    private final int minimumProcessedNumber;
 
     ArrayBlockingQueue<Task> tasksQueue;
 
-    private double totalFailures = 0;
+    private final AtomicInteger processedCounter = new AtomicInteger(0);
+    private int failureCounter = 0;
 
-    public ServiceSystem(int queueSize, int channelsNumber, long modellingTime, int averageTimeBetweenTasks) {
+    public ServiceSystem(int queueSize, int channelsNumber, int taskExecutionTime, int averageTimeBetweenTasks, int minimumProcessedNumber) {
         this.channelsNumber = channelsNumber;
-        this.modellingTime = modellingTime;
+        this.taskExecutionTime = taskExecutionTime;
         this.averageTimeBetweenTasks = averageTimeBetweenTasks;
+        this.minimumProcessedNumber = minimumProcessedNumber;
         tasksQueue = new ArrayBlockingQueue<>(queueSize);
     }
 
-    public void launch() {
-        var channels = new ArrayList<Channel>();
+    public void simulate() {
+        var channels = new ArrayList<ServiceChannel>();
         var channelsPool = Executors.newFixedThreadPool(channelsNumber);
+
         for (int i = 0; i < channelsNumber; i++) {
-            var channel = new Channel(tasksQueue);
+            var channel = new ServiceChannel(tasksQueue, processedCounter);
             channels.add(channel);
             channelsPool.execute(channel);
         }
-        var startTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTime < modellingTime) {
+
+        while (processedCounter.get() < minimumProcessedNumber) {
             try {
-                if (!tasksQueue.offer(new Task(50))) {
-                    totalFailures++;
+                if (!tasksQueue.offer(new Task(taskExecutionTime))) {
+                    failureCounter++;
                 }
                 Thread.sleep(averageTimeBetweenTasks);
             } catch (InterruptedException e) {
@@ -40,6 +45,17 @@ public class ServiceSystem {
         for (var channel : channels) {
             channel.stop();
         }
-        channelsPool.shutdown();
+    }
+
+    public void printStats() {
+        // TODO: Remove this debug method later
+        System.out.println("Total processed: " + processedCounter.get());
+        System.out.println("Total failures: " + failureCounter);
+    }
+
+    public double getFailureProbability() {
+        double failures = failureCounter;
+        double successes = processedCounter.get();
+        return failures / (failures + successes);
     }
 }

@@ -1,20 +1,23 @@
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class Channel implements Runnable {
+public class ServiceChannel implements Runnable {
     private final ArrayBlockingQueue<Task> taskQueue;
+    private final AtomicInteger processedCounter;
     private boolean isStopped = false;
 
-    public Channel(ArrayBlockingQueue<Task> taskQueue) {
+    public ServiceChannel(ArrayBlockingQueue<Task> taskQueue, AtomicInteger processedCounter) {
         this.taskQueue = taskQueue;
+        this.processedCounter = processedCounter;
     }
 
     @Override
     public void run() {
-        while (isStopped) {
-            var task = taskQueue.poll();
+        while (!isStopped) {
             try {
-                assert task != null;
+                var task = taskQueue.take();
                 task.execute();
+                processedCounter.incrementAndGet();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
