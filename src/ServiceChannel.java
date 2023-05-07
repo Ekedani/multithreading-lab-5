@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ServiceChannel implements Runnable {
     private final ArrayBlockingQueue<Task> taskQueue;
     private final AtomicInteger processedCounter;
-    private boolean isStopped = false;
 
     public ServiceChannel(ArrayBlockingQueue<Task> taskQueue, AtomicInteger processedCounter) {
         this.taskQueue = taskQueue;
@@ -13,18 +12,13 @@ public class ServiceChannel implements Runnable {
 
     @Override
     public void run() {
-        while (!isStopped) {
-            try {
+        try {
+            while (true) {
                 var task = taskQueue.take();
                 task.execute();
                 processedCounter.incrementAndGet();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             }
+        } catch (InterruptedException ignored) {
         }
-    }
-
-    public void stop() {
-        this.isStopped = true;
     }
 }

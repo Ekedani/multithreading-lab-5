@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7,17 +8,18 @@ public class ServiceSystem {
     private final int channelsNumber;
     private final int taskExecutionTime;
     private final int averageTimeBetweenTasks;
+    private final int timeStandardDeviation;
     private final int minimumProcessedNumber;
 
-    ArrayBlockingQueue<Task> tasksQueue;
-
+    private final ArrayBlockingQueue<Task> tasksQueue;
     private final AtomicInteger processedCounter = new AtomicInteger(0);
     private int failureCounter = 0;
 
-    public ServiceSystem(int queueSize, int channelsNumber, int taskExecutionTime, int averageTimeBetweenTasks, int minimumProcessedNumber) {
+    public ServiceSystem(int queueSize, int channelsNumber, int taskExecutionTime, int averageTimeBetweenTasks, int timeStandardDeviation, int minimumProcessedNumber) {
         this.channelsNumber = channelsNumber;
         this.taskExecutionTime = taskExecutionTime;
         this.averageTimeBetweenTasks = averageTimeBetweenTasks;
+        this.timeStandardDeviation = timeStandardDeviation;
         this.minimumProcessedNumber = minimumProcessedNumber;
         tasksQueue = new ArrayBlockingQueue<>(queueSize);
     }
@@ -32,20 +34,21 @@ public class ServiceSystem {
             channelsPool.execute(channel);
         }
 
+        var random = new Random();
         while (processedCounter.get() < minimumProcessedNumber) {
             try {
                 if (!tasksQueue.offer(new Task(taskExecutionTime))) {
                     failureCounter++;
                 }
-                Thread.sleep(averageTimeBetweenTasks);
+                var waitingTime = (long) (averageTimeBetweenTasks + timeStandardDeviation * random.nextGaussian());
+                Thread.sleep(waitingTime > 0 ? waitingTime : 1);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        for (var channel : channels) {
-            channel.stop();
-        }
+        channelsPool.shutdownNow();
     }
+
 
     public void printStats() {
         // TODO: Remove this debug method later
