@@ -75,14 +75,17 @@ public class ServiceSystem {
         }
     }
 
-    public double getFailureProbability() {
-        double failures = failureCounter.get();
-        double successes = processedCounter.get();
-        return failures / (failures + successes);
-    }
-
     public String getId() {
         return this.id;
+    }
+
+    public AtomicInteger getProcessedCounter() {
+        return processedCounter;
+    }
+
+
+    public AtomicInteger getFailureCounter() {
+        return failureCounter;
     }
 
     public AtomicBoolean getIsRunning() {

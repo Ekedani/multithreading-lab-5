@@ -26,8 +26,19 @@ public class SystemObserver extends Thread {
         this.system = system;
     }
 
+    public double getAverageQueueSize() {
+        return queueSizesSum / totalChecks;
+    }
+
+    public double getFailureProbability() {
+        double processed = system.getProcessedCounter().get();
+        double failed = system.getFailureCounter().get();
+        return failed / (processed + failed);
+    }
+
     public void printFinalResults() {
-        System.out.println("System #" + system.getId() + " average queue size: " + (queueSizesSum / totalChecks));
-        System.out.println("System #" + system.getId() + " failure probability: " + system.getFailureProbability());
+        System.out.println("System #" + system.getId() + " average queue size: " + this.getAverageQueueSize());
+        System.out.println("System #" + system.getId() + " failure probability: " + this.getFailureProbability());
+
     }
 }
