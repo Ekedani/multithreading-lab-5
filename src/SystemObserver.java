@@ -1,4 +1,6 @@
 public class SystemObserver extends Thread {
+    private final static int CHECKS_PER_OUTPUT = 3;
+
     private final long checkInterval;
     private ServiceSystem system;
 
@@ -15,6 +17,9 @@ public class SystemObserver extends Thread {
             while (system.getIsRunning().get()) {
                 queueSizesSum += system.getQueueSize();
                 totalChecks++;
+                if (totalChecks % CHECKS_PER_OUTPUT == 0) {
+                    this.printSystemParameters();
+                }
                 Thread.sleep(checkInterval);
             }
         } catch (InterruptedException e) {
@@ -36,9 +41,12 @@ public class SystemObserver extends Thread {
         return failed / (processed + failed);
     }
 
-    public void printFinalResults() {
-        System.out.println("System #" + system.getId() + " average queue size: " + this.getAverageQueueSize());
-        System.out.println("System #" + system.getId() + " failure probability: " + this.getFailureProbability());
-
+    public void printSystemParameters() {
+        var averageQueueSize = this.getAverageQueueSize();
+        var failureProbability = this.getFailureProbability();
+        System.out.println("System #" + system.getId() +
+                " Average queue size: " + averageQueueSize +
+                " | Failure probability: " + failureProbability
+        );
     }
 }
