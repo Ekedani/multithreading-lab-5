@@ -1,3 +1,4 @@
+// Is not used anymore because of time, needed to create an object
 public class Task {
     private final long executionTime;
 

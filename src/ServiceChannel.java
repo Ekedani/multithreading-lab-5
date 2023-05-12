@@ -2,10 +2,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ServiceChannel implements Runnable {
-    private final ArrayBlockingQueue<Task> taskQueue;
+    private final ArrayBlockingQueue<Long> taskQueue;
     private final AtomicInteger processedCounter;
 
-    public ServiceChannel(ArrayBlockingQueue<Task> taskQueue, AtomicInteger processedCounter) {
+    public ServiceChannel(ArrayBlockingQueue<Long> taskQueue, AtomicInteger processedCounter) {
         this.taskQueue = taskQueue;
         this.processedCounter = processedCounter;
     }
@@ -15,7 +15,7 @@ public class ServiceChannel implements Runnable {
         try {
             while (true) {
                 var task = taskQueue.take();
-                task.execute();
+                Thread.sleep(task);
                 processedCounter.incrementAndGet();
             }
         } catch (InterruptedException ignored) {

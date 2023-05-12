@@ -10,13 +10,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ServiceSystem {
     private final String id = UUID.randomUUID().toString();
     private final int channelsNumber;
-    private final int taskExecutionTime;
+    private final long taskExecutionTime;
     private final int averageTimeBetweenTasks;
     private final int timeStandardDeviation;
     private final int minimumProcessedNumber;
     private final SystemObserver systemObserver;
 
-    private final ArrayBlockingQueue<Task> tasksQueue;
+    private final ArrayBlockingQueue<Long> tasksQueue;
     private final AtomicInteger processedCounter = new AtomicInteger(0);
     private final AtomicInteger failureCounter = new AtomicInteger(0);
     private final AtomicBoolean isRunning = new AtomicBoolean(true);
@@ -54,7 +54,7 @@ public class ServiceSystem {
         var random = new Random();
         while (processedCounter.get() < minimumProcessedNumber) {
             try {
-                if (!tasksQueue.offer(new Task(taskExecutionTime))) {
+                if (!tasksQueue.offer(taskExecutionTime)) {
                     failureCounter.incrementAndGet();
                 }
                 var waitingTime = (long) (averageTimeBetweenTasks + timeStandardDeviation * random.nextGaussian());
