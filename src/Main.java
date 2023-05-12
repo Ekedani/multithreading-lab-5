@@ -1,4 +1,8 @@
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class Main {
     // ServiceSystem parameters
@@ -37,8 +41,7 @@ public class Main {
     }
 
     public static void parallelSimulationMultiple() {
-        ArrayList<SystemObserver> systemObservers = new ArrayList<>();
-        ArrayList<ServiceSystem> serviceSystems = new ArrayList<>();
+        ArrayList<SystemSimulationTask> simulationTasks = new ArrayList<>();
         for (int i = 0; i < PARALLEL_SIMULATIONS_NUMBER; i++) {
             var systemObserver = new SystemObserver(CHECK_INTERVAL);
             var serviceSystem = new ServiceSystem(
@@ -50,35 +53,28 @@ public class Main {
                     MINIMUM_PROCESSED_NUMBER,
                     systemObserver
             );
-            systemObservers.add(systemObserver);
-            serviceSystems.add(serviceSystem);
+            simulationTasks.add(new SystemSimulationTask(serviceSystem, systemObserver));
         }
-        ArrayList<Thread> simulationThreads = new ArrayList<>();
-        for (var system : serviceSystems) {
-            simulationThreads.add(new Thread(system::simulate));
-        }
-        for (var thread : simulationThreads) {
-            thread.start();
-        }
+
         try {
-            for (var thread : simulationThreads) {
-                thread.join();
+            var threadPool = Executors.newFixedThreadPool(PARALLEL_SIMULATIONS_NUMBER);
+            var systemObservers = threadPool.invokeAll(simulationTasks);
+            threadPool.shutdown();
+            System.out.println("===== SIMULATIONS RESULTS =====");
+            for (var observer : systemObservers) {
+                observer.get().printSystemParameters();
             }
-        } catch (InterruptedException e) {
+            System.out.println("===== GLOBAL RESULTS =====");
+            double queueSizesSum = 0;
+            double failureProbabilitiesSum = 0;
+            for (var observer : systemObservers) {
+                queueSizesSum += observer.get().getAverageQueueSize();
+                failureProbabilitiesSum += observer.get().getFailureProbability();
+            }
+            System.out.println("Global Average queue size: " + queueSizesSum / PARALLEL_SIMULATIONS_NUMBER +
+                    " | Failure probability: " + failureProbabilitiesSum / PARALLEL_SIMULATIONS_NUMBER);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        System.out.println("===== SIMULATIONS RESULTS =====");
-        for (var observer : systemObservers) {
-            observer.printSystemParameters();
-        }
-        System.out.println("===== GLOBAL RESULTS =====");
-        double queueSizesSum = 0;
-        double failureProbabilitiesSum = 0;
-        for (var observer : systemObservers) {
-            queueSizesSum += observer.getAverageQueueSize();
-            failureProbabilitiesSum += observer.getFailureProbability();
-        }
-        System.out.println("Global Average queue size: " + queueSizesSum / PARALLEL_SIMULATIONS_NUMBER +
-                " | Failure probability: " + failureProbabilitiesSum / PARALLEL_SIMULATIONS_NUMBER);
     }
 }
